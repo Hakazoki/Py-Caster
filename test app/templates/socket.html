@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script type="text/javascript">
+        var socket = io.connect('http://127.0.0.1:5000');
+
+        socket.on('connect', function () {
+            socket.send('Utilisateur connecté!');
+        });
+
+        socket.on('response', function (msg) {
+            alert(msg);
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Test socket</h1>
+</body>
+
+</html>
