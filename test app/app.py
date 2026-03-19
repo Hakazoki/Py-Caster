@@ -1,5 +1,5 @@
-from flask import Flask, render_template
-from flask_socketio import SocketIO, send
+from flask import Flask, render_template, session, request, redirect, url_for
+from flask_socketio import SocketIO, emit, join_room, leave_room, send
 
 
 app = Flask(__name__)
@@ -14,6 +14,17 @@ def index():
 @app.route('/socket')
 def socket_page():
     return render_template('socket.html')
+
+@app.route('/client')
+def client_page():
+    return render_template('client.html')
+
+@app.route('/mobile')
+def AR_page():
+    return render_template('mobile.html')
+
+def messageReceived(methods=['GET', 'POST']):
+    print('message reçus')
 
 @socketio.on('message')
 def handle_message(message):
