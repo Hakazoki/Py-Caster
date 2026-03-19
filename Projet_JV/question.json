@@ -1,0 +1,20 @@
+[
+    {
+        "id": 0,
+        "text": "Complète la fonction pour qu'elle retourne un nombre strictement positif :",
+        "template": "def compute():\n    # TODO\n    pass",
+        "type": "positive"
+    },
+    {
+        "id": 1,
+        "text": "Complète la fonction pour qu'elle retourne un nombre pair :",
+        "template": "def compute():\n    # TODO\n    pass",
+        "type": "even"
+    },
+    {
+        "id": 2,
+        "text": "Complète la fonction pour qu'elle retourne un nombre supérieur à 100 :",
+        "template": "def compute():\n    # TODO\n    pass",
+        "type": "gt100"
+    }
+]
