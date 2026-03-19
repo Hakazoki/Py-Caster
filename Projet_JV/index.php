@@ -83,10 +83,14 @@ session_start();
         const terminal = document.getElementById('terminal');
         const closeTerminal = document.getElementById('closeTerminal');
         const resetBtn = document.getElementById('resetBtn');
+        let puzzleMode = false;
+
         const commands = {
+
             help: () => {
-                return "Sorts dispo : help, fireball, soin, slay, foudre, glagla, histo"
+                return "Sorts dispo : help, fireball, soin, slay, foudre, glagla, histo";
             },
+
             fireball: () => {
                 puzzleMode = true;
 
@@ -98,65 +102,44 @@ def compute():
     # TODO
     pass
 
-Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.
-`;
+Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
 
-                return new Promise(resolve => {
+            },
+            _resolvePuzzle: async () => {
 
-                    const listener = async (e) => {
-                        if (e.key !== "Enter") return;
+                const allLines = terminal.value.split("\n");
 
-                        const allLines = terminal.value.split("\n");
-                        const lastLine = allLines[allLines.length - 1].trim();
+                const startIndex = allLines.findIndex(l =>
+                    l.trim().startsWith("def compute")
+                );
 
-                        if (lastLine !== "run") return;
+                if (startIndex === -1) {
+                    terminal.value += "\nERREUR : Impossible de trouver compute().\n$ ";
+                    return;
+                }
 
-                        e.preventDefault();
+                const runIndex = allLines.length - 1;
 
-                        const startIndex = allLines.findIndex(l =>
-                            l.trim().startsWith("def compute")
-                        );
+                let codeLines = allLines.slice(startIndex, runIndex);
 
-                        if (startIndex === -1) {
-                            terminal.value += "\nERREUR : Impossible de trouver compute().\n";
-                            document.removeEventListener("keydown", listener);
-                            puzzleMode = false;
-                            resolve("Erreur");
-                            return;
-                        }
+                codeLines = codeLines.filter(l =>
+                    l.trim().startsWith("def ") ||
+                    l.trim().startsWith("#") ||
+                    l.startsWith("    ") ||
+                    l.trim() === ""
+                );
 
-                        const runIndex = allLines.length - 1;
+                const code = codeLines.join("\n");
 
-                        let codeLines = allLines.slice(startIndex, runIndex);
+                const result = await fetch("cmd_fireball.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: "code=" + encodeURIComponent(code)
+                }).then(r => r.text());
 
-                        codeLines = codeLines.filter(l =>
-                            l.trim().startsWith("def ") ||
-                            l.trim().startsWith("#") ||
-                            l.startsWith("    ") ||
-                            l.trim() === ""
-                        );
-
-                        const code = codeLines.join("\n");
-
-
-                        const result = await fetch("cmd_fireball.php", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/x-www-form-urlencoded"
-                            },
-                            body: "code=" + encodeURIComponent(code)
-                        }).then(r => r.text());
-
-                        terminal.value += "\n" + result + "\n";
-
-                        puzzleMode = false;
-                        resolve(result);
-
-                        document.removeEventListener("keydown", listener);
-                    };
-
-                    document.addEventListener("keydown", listener);
-                });
+                terminal.value += "\n" + result + "\n$ ";
             },
 
             soin: () => {
@@ -210,35 +193,39 @@ def compute():
         resetBtn.addEventListener("click", function() {
             fetch("reset_histo.php")
         });
+        terminal.addEventListener("keydown", async (e) => {
+            if (e.key !== "Enter") return;
 
-        let puzzleMode = false;
-        terminal.addEventListener("keydown", function(e) {
-            if (e.key === "Enter") {
-                const lines = terminal.value.split("\n");
-                const lastLine = lines[lines.length - 1].trim();
-                if (puzzleMode) {
-                    if (lastLine === "run") {
-                        e.preventDefault();
-                        puzzleMode = false;
-                        commands._resolvePuzzle();
-                    }
-                    return;
+            const lines = terminal.value.split("\n");
+            const lastLine = lines[lines.length - 1].trim();
+
+            if (puzzleMode) {
+                if (lastLine === "run") {
+                    e.preventDefault();
+                    puzzleMode = false;
+                    await commands._resolvePuzzle();
                 }
-                e.preventDefault();
-                const cmd = lastLine.replace(/^\$/, "").trim();
+                return;
+            }
 
-                if (commands[cmd]) {
-                    const output = commands[cmd]();
-                    if (output instanceof Promise) {
-                        output.then(text => {
-                            terminal.value += "\n" + text + "\n$ ";
-                        });
-                    } else {
-                        terminal.value += "\n" + output + "\n$ ";
+            const cmd = lastLine.replace(/^\$/, "").trim();
+
+            if (commands[cmd]) {
+                const output = commands[cmd]();
+
+                if (output instanceof Promise) {
+                    const text = await output;
+                    if (text !== undefined) {
+                        terminal.value += "\n" + text + "\n$ ";
                     }
                 } else {
-                    terminal.value += "\nCommande inconnue : " + cmd + "\n$ ";
+                    if (output !== undefined) {
+                        terminal.value += "\n" + output + "\n$ ";
+                    }
                 }
+
+            } else {
+                terminal.value += "\nCommande inconnue : " + cmd + "\n$ ";
             }
         });
 

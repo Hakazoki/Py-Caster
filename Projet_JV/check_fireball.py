@@ -27,5 +27,3 @@ if isinstance(result, (int, float)) and result > 0:
 else:
     dmg = random.randint(5, 15)
     print("ECHEC : compute() ne renvoie pas un nombre positif.\nVous subissez {} degats.".format(dmg))
-
-print("DEBUG:", repr(code))
