@@ -23,9 +23,9 @@ except Exception as e:
 
 if isinstance(result, (int, float)) and result > 0:
     dmg = random.randint(10, 25)
-    print("SUCCÈS : Puzzle reussi !\nVotre boule de feu touche l'ennemi.\nDégâts infligés : {}.".format(dmg))
+    print("SUCCES : Puzzle reussi !\nVotre boule de feu touche l'ennemi.\nDegats infliges : {}.".format(dmg))
 else:
     dmg = random.randint(5, 15)
-    print("ÉCHEC : compute() ne renvoie pas un nombre positif.\nVous subissez {} dégâts.".format(dmg))
+    print("ECHEC : compute() ne renvoie pas un nombre positif.\nVous subissez {} degats.".format(dmg))
 
 print("DEBUG:", repr(code))

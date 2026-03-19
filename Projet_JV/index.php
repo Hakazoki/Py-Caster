@@ -102,38 +102,63 @@ def compute():
 `;
 
                 return new Promise(resolve => {
+
                     const listener = async (e) => {
-                        if (e.key === "Enter") {
-                            const lastLine = terminal.value.split("\n").pop().trim();
-                            if (lastLine === "run") {
-                                const allLines = terminal.value.split("\n");
+                        if (e.key !== "Enter") return;
 
-                                const startIndex = allLines.findIndex(l => l.trim().startsWith("def compute"));
-                                const endIndex = allLines.findIndex((l, i) => i > startIndex && l.trim() === "run");
+                        const allLines = terminal.value.split("\n");
+                        const lastLine = allLines[allLines.length - 1].trim();
 
-                                let code = "";
-                                if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-                                    code = allLines.slice(startIndex, endIndex).join("\n");
-                                } else {
-                                    code = "";
-                                }
-                                const result = await fetch("cmd_fireball.php", {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/x-www-form-urlencoded"
-                                    },
-                                    body: "code=" + encodeURIComponent(code)
-                                }).then(r => r.text());
+                        if (lastLine !== "run") return;
 
-                                terminal.value += "\n" + result + "\n";
-                                resolve(result);
-                                document.removeEventListener("keydown", listener);
-                            }
+                        e.preventDefault();
+
+                        const startIndex = allLines.findIndex(l =>
+                            l.trim().startsWith("def compute")
+                        );
+
+                        if (startIndex === -1) {
+                            terminal.value += "\nERREUR : Impossible de trouver compute().\n";
+                            document.removeEventListener("keydown", listener);
+                            puzzleMode = false;
+                            resolve("Erreur");
+                            return;
                         }
+
+                        const runIndex = allLines.length - 1;
+
+                        let codeLines = allLines.slice(startIndex, runIndex);
+
+                        codeLines = codeLines.filter(l =>
+                            l.trim().startsWith("def ") ||
+                            l.trim().startsWith("#") ||
+                            l.startsWith("    ") ||
+                            l.trim() === ""
+                        );
+
+                        const code = codeLines.join("\n");
+
+
+                        const result = await fetch("cmd_fireball.php", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                            body: "code=" + encodeURIComponent(code)
+                        }).then(r => r.text());
+
+                        terminal.value += "\n" + result + "\n";
+
+                        puzzleMode = false;
+                        resolve(result);
+
+                        document.removeEventListener("keydown", listener);
                     };
+
                     document.addEventListener("keydown", listener);
                 });
             },
+
             soin: () => {
                 return fetch("soin.php")
                     .then(r => r.text())
