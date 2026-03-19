@@ -109,30 +109,57 @@ ${q.template}
 
             _resolvePuzzle: async () => {
 
+                // 1. Récupérer toutes les lignes du terminal
                 const allLines = terminal.value.split("\n");
 
-                const startIndex = allLines.findIndex(l =>
-                    l.trim().startsWith("def compute")
-                );
+                // 2. Trouver le DERNIER "def compute()"
+                let startIndex = -1;
+                for (let i = allLines.length - 1; i >= 0; i--) {
+                    if (allLines[i].trim().startsWith("def compute")) {
+                        startIndex = i;
+                        break;
+                    }
+                }
 
                 if (startIndex === -1) {
                     terminal.value += "\nERREUR : Impossible de trouver compute().\n$ ";
                     return;
                 }
 
-                const runIndex = allLines.length - 1;
+                // 3. Trouver le DERNIER "run" APRÈS ce compute()
+                let runIndex = -1;
+                for (let i = allLines.length - 1; i > startIndex; i--) {
+                    if (allLines[i].trim() === "run") {
+                        runIndex = i;
+                        break;
+                    }
+                }
 
-                let codeLines = allLines.slice(startIndex, runIndex);
+                if (runIndex === -1) {
+                    terminal.value += "\nERREUR : Tape 'run' pour valider.\n$ ";
+                    return;
+                }
 
-                codeLines = codeLines.filter(l =>
-                    l.trim().startsWith("def ") ||
-                    l.trim().startsWith("#") ||
-                    l.startsWith("    ") ||
-                    l.trim() === ""
-                );
+                // 4. Extraire toutes les lignes entre compute() et run
+                const rawBlock = allLines.slice(startIndex, runIndex);
 
+                // 5. Filtrer pour ne garder QUE les lignes Python valides
+                const codeLines = rawBlock.filter(l => {
+                    const t = l.trim();
+                    return (
+                        t.startsWith("def ") ||
+                        t.startsWith("return ") ||
+                        t.includes("=") ||
+                        t.startsWith("#") ||
+                        l.startsWith("    ") ||
+                        t === ""
+                    );
+                });
+
+                // 6. Reconstituer le code propre
                 const code = codeLines.join("\n");
 
+                // 7. Envoyer au serveur
                 const result = await fetch("cmd_fireball.php", {
                     method: "POST",
                     headers: {
@@ -140,7 +167,6 @@ ${q.template}
                     },
                     body: "code=" + encodeURIComponent(code) +
                         "&puzzle_id=" + window.currentPuzzle
-
                 }).then(r => r.text());
 
                 terminal.value += "\n" + result + "\n$ ";

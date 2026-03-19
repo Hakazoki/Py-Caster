@@ -16,5 +16,41 @@
         "text": "Complète la fonction pour qu'elle retourne un nombre supérieur à 100 :",
         "template": "def compute():\n    # TODO\n    pass",
         "type": "gt100"
+    },
+    {
+        "id": 3,
+        "text": "Complète la fonction pour qu'elle retourne la longueur de la liste donnée :",
+        "template": "def compute():\n    data = [1, 2, 3, 4]\n    # TODO : retourner la longueur de data\n    pass",
+        "type": "positive"
+    },
+    {
+        "id": 4,
+        "text": "Complète la fonction pour qu'elle retourne un nombre pair en utilisant une condition :",
+        "template": "def compute():\n    x = 7\n    # TODO : si x est impair, retourne x+1, sinon retourne x\n    pass",
+        "type": "even"
+    },
+    {
+        "id": 5,
+        "text": "Complète la fonction pour qu'elle retourne un nombre supérieur à 100 en utilisant une multiplication :",
+        "template": "def compute():\n    base = 25\n    # TODO : retourner base multiplié par un nombre\n    pass",
+        "type": "gt100"
+    },
+    {
+        "id": 6,
+        "text": "Ajoute un élément à la liste pour que la fonction retourne un nombre strictement positif :",
+        "template": "def compute():\n    items = []\n    # TODO : ajouter un nombre positif dans items\n    pass",
+        "type": "positive"
+    },
+    {
+        "id": 7,
+        "text": "Complète la fonction pour qu'elle retourne la chaîne 'DRAGON' en majuscules :",
+        "template": "def compute():\n    txt = 'dragon'\n    # TODO : retourner txt en majuscules\n    pass",
+        "type": "string_upper"
+    },
+    {
+        "id": 8,
+        "text": "Complète la fonction pour qu'elle retourne la somme des nombres de la liste :",
+        "template": "def compute():\n    nums = [10, 20, 30]\n    # TODO : retourner la somme de nums\n    pass",
+        "type": "positive"
     }
 ]
