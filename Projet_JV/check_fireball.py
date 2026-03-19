@@ -8,14 +8,24 @@ import random
 # 1. Chargement du code joueur
 # ---------------------------------------------------------
 
+# Nom du fichier contenant le code Python du joueur
 filename = sys.argv[1]
 
-try:
-    puzzle_id = int(sys.argv[2])
-except:
+# Vérification du puzzle_id sans try/except
+if len(sys.argv) < 3:
     print("ERREUR : puzzle_id invalide.")
     sys.exit(0)
 
+arg = sys.argv[2]
+
+# Accepte les entiers positifs et négatifs
+if not arg.lstrip("-").isdigit():
+    print("ERREUR : puzzle_id invalide.")
+    sys.exit(0)
+
+puzzle_id = int(arg)
+
+# Lecture du code joueur
 with open(filename, "r", encoding="utf-8") as f:
     code = f.read()
 
