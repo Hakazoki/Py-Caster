@@ -91,20 +91,21 @@ session_start();
                 return "Sorts dispo : help, fireball, soin, slay, foudre, glagla, histo";
             },
 
-            fireball: () => {
+            fireball: async () => {
                 puzzleMode = true;
-
+                const questions = await fetch("question.json").then(r => r.json());
+                const q = questions[Math.floor(Math.random() * questions.length)];
+                window.currentPuzzle = q.id;
                 terminal.value +=
                     `\n=== PUZZLE PYTHON : Sort "fireball" ===
-Complète la fonction pour qu'elle retourne un nombre strictement positif :
+${q.text}
 
-def compute():
-    # TODO
-    pass
+${q.template}
 
 Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
-
             },
+
+
             _resolvePuzzle: async () => {
 
                 const allLines = terminal.value.split("\n");
@@ -136,7 +137,9 @@ def compute():
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded"
                     },
-                    body: "code=" + encodeURIComponent(code)
+                    body: "code=" + encodeURIComponent(code) +
+                        "&puzzle_id=" + window.currentPuzzle
+
                 }).then(r => r.text());
 
                 terminal.value += "\n" + result + "\n$ ";
