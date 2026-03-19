@@ -1,0 +1,38 @@
+.titre {
+  color: white;
+  text-align: center;
+  font-size: 50px;
+  font-weight: bold;
+}
+
+.play {
+  margin: auto;
+  text-align: center;
+}
+
+.btn-xyl {
+  flex-direction: column;
+  margin: 20px;
+  padding: 40px;
+  font-size: 40px;
+}
+
+.btn-darkred {
+  background-color: darkred;
+  color: white;
+  border-color: black;
+}
+
+.btn-darkred:hover {
+  background-color: #600000;
+  color: white;
+  border-color: black;
+}
+.terminal {
+  background-color: #111;
+  color: #0f0;
+  font-family: "Fira Code", monospace;
+  padding: 10px;
+  border-radius: 5px;
+  resize: none;
+}
