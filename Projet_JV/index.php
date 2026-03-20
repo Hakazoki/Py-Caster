@@ -205,15 +205,21 @@ ${q.template}
                     failure: "ECHEC"
                 };
 
-                let success = false;
-
-                if (result.includes(puzzleResultMap.success)) {
-                    success = true;
-                } else if (result.includes(puzzleResultMap.failure)) {
-                    success = false;
+                function detectPuzzleResult(text) {
+                    if (text.includes(puzzleResultMap.success)) return true;
+                    if (text.includes(puzzleResultMap.failure)) return false;
+                    return false;
                 }
 
-                // Envoi à Socket.io
+
+
+                const success = detectPuzzleResult(result);
+                console.log("Résultat puzzle :", success ? "SUCCES" : "ECHEC");
+
+
+                // ------------------------------------------------------
+                // 9. Envoi automatique via Socket.io
+                // ------------------------------------------------------
                 Resultat(success);
 
             },
