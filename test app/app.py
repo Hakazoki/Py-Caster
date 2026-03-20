@@ -21,6 +21,8 @@ def print_succes(hp):
      * /  |  \   *
        * * *
     """ + f"\n>>> SORTILLEGE LANCER AVEC SUCCES ! VIE DU MONSTRE : {hp} <<<\n")
+    print(message)
+    socketio.emit('ascii_log', {'data': message})
 
 def print_echec(hp):
     print("\n" + r"""
@@ -33,6 +35,8 @@ def print_echec(hp):
               /   \
 _____________/_ __ \_____________
     """ + f"\n>>> ECHEC DU SORTILLEGE IL VOUS EXPLOSE EN MAIN ! VIE DU JOUEUR : {hp} <<<\n")
+    print(message)
+    socketio.emit('ascii_log', {'data': message})
 
 def print_restart():
     print("\n" + r"""
@@ -40,6 +44,8 @@ def print_restart():
      |Redemarrage de la partie|
      ==========================
     """ + "\n")
+    print(message)
+    socketio.emit('ascii_log', {'data': message})
 
 @app.route('/')
 def index():
@@ -58,6 +64,7 @@ def handle_incantation(data):
     if reussite:
         game_state['vie_ennemi'] = max(0, game_state['vie_ennemi'] - 20)
         print_succes(game_state['vie_ennemi'])
+
     else:
         game_state['vie_joueur'] = max(0, game_state['vie_joueur'] - 10)
         print_echec(game_state['vie_joueur'])
