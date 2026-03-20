@@ -311,6 +311,15 @@ ${q.template}
                 terminal.selectionStart = terminal.selectionEnd = start + tab.length;
             }
         });
+        /* ---------------------------------------------------------
+   4. Affichage des ASCII envoyés par app.py
+--------------------------------------------------------- */
+        socket.on('ascii_log', (payload) => {
+            const asciiMessage = payload.data;
+
+            terminal.value += "\n" + asciiMessage + "\n$ ";
+            scrollTerminalToBottom();
+        });
     </script>
     <script>
         const socket = io('http://192.168.10.210:5000');
