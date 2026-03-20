@@ -85,6 +85,30 @@ session_start();
         const closeTerminal = document.getElementById('closeTerminal');
         const resetBtn = document.getElementById('resetBtn');
         let puzzleMode = false;
+        window.currentPuzzle = null;
+        window.currentSpell = null;
+
+        // ------------------------------------------------------------
+        // 1. Fonction générique pour lancer un puzzle Python
+        // ------------------------------------------------------------
+        async function launchPuzzle(spellName) {
+            puzzleMode = true;
+            window.currentSpell = spellName;
+
+            const questions = await fetch("question.json").then(r => r.json());
+            const q = questions[Math.floor(Math.random() * questions.length)];
+
+            window.currentPuzzle = q.id;
+
+            terminal.value += `
+=== PUZZLE PYTHON : Sort "${spellName}" ===
+${q.text}
+
+${q.template}
+
+Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
+        }
+
 
         const commands = {
 
@@ -92,20 +116,10 @@ session_start();
                 return "Sorts dispo : help, fireball, soin, slay, foudre, glagla, histo";
             },
 
-            fireball: async () => {
-                puzzleMode = true;
-                const questions = await fetch("question.json").then(r => r.json());
-                const q = questions[Math.floor(Math.random() * questions.length)];
-                window.currentPuzzle = q.id;
-                terminal.value +=
-                    `\n=== PUZZLE PYTHON : Sort "fireball" ===
-${q.text}
-
-${q.template}
-
-Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
-            },
-
+            fireball: () => launchPuzzle("Fireball"),
+            slay: () => launchPuzzle("Slay"),
+            glagla: () => launchPuzzle("Glagla"),
+            foudre: () => launchPuzzle("Foudre"),
 
             _resolvePuzzle: async () => {
 
@@ -160,44 +174,23 @@ ${q.template}
                 const code = codeLines.join("\n");
 
                 // 7. Envoyer au serveur
-                const result = await fetch("cmd_fireball.php", {
+                const result = await fetch("cmd_attack.php", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded"
                     },
                     body: "code=" + encodeURIComponent(code) +
-                        "&puzzle_id=" + window.currentPuzzle
+                        "&puzzle_id=" + window.currentPuzzle +
+                        "&spell=" + window.currentSpell
                 }).then(r => r.text());
 
                 terminal.value += "\n" + result + "\n$ ";
             },
-
             soin: () => {
                 return fetch("soin.php")
                     .then(r => r.text())
                     .then(number => {
                         return "Vous vous soignez !\nPV récupérés : " + number;
-                    });
-            },
-            slay: () => {
-                return fetch("cmd_action.php")
-                    .then(r => r.text())
-                    .then(number => {
-                        return "Votre ennemi est lacéré !\nDégâts infligés : " + number;
-                    });
-            },
-            foudre: () => {
-                return fetch("cmd_action.php")
-                    .then(r => r.text())
-                    .then(number => {
-                        return "Des éclairs frappent l'adversaire !\nDégâts infligés : " + number;
-                    });
-            },
-            glagla: () => {
-                return fetch("cmd_action.php")
-                    .then(r => r.text())
-                    .then(number => {
-                        return "Un blizzard se lève !\nDégâts infligés : " + number;
                     });
             },
             histo: () => {
@@ -294,7 +287,7 @@ ${q.template}
         document.getElementById('btn-restart').addEventListener('click', () => {
             relancerPartie();
         });
-        
+
         socket.on('connect', () => {
             console.log("✔️ Connecté au serveur Socket.io");
         });

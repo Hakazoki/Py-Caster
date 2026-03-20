@@ -5,13 +5,13 @@ import json
 import random
 
 # ---------------------------------------------------------
-# 1. Chargement du code joueur
+# 1. Chargement des arguments
 # ---------------------------------------------------------
 
 # Nom du fichier contenant le code Python du joueur
 filename = sys.argv[1]
 
-# Vérification du puzzle_id sans try/except
+# Vérification du puzzle_id
 if len(sys.argv) < 3:
     print("ERREUR : puzzle_id invalide.")
     sys.exit(0)
@@ -24,6 +24,12 @@ if not arg.lstrip("-").isdigit():
     sys.exit(0)
 
 puzzle_id = int(arg)
+
+# Récupération du nom du sort
+if len(sys.argv) < 4:
+    spell = "inconnu"
+else:
+    spell = sys.argv[3]
 
 # Lecture du code joueur
 with open(filename, "r", encoding="utf-8") as f:
@@ -86,7 +92,7 @@ if compute_node is None:
     sys.exit(0)
 
 # ---------------------------------------------------------
-# 5. Extraction du return et évaluation contrôlée
+# 5. Extraction du return et exécution contrôlée
 # ---------------------------------------------------------
 
 returns = [node for node in compute_node.body if isinstance(node, ast.Return)]
@@ -118,7 +124,6 @@ if "compute" not in safe_locals:
 # Appelle compute()
 result = safe_locals["compute"]()
 
-
 # ---------------------------------------------------------
 # 6. Chargement du puzzle et vérification
 # ---------------------------------------------------------
@@ -142,7 +147,7 @@ checks = {
 }
 
 # ---------------------------------------------------------
-# 7. Résultat final
+# 7. Résultat final (générique pour tous les sorts)
 # ---------------------------------------------------------
 
 if ptype not in checks:
@@ -151,7 +156,11 @@ if ptype not in checks:
 
 if checks[ptype](result):
     dmg = random.randint(10, 25)
-    print("SUCCES : Puzzle reussi !\nVotre boule de feu touche l'ennemi.\nDegats infliges :", dmg)
+    print("SUCCES : Puzzle reussi !")
+    print("Votre sort '{}' touche l'ennemi.".format(spell))
+    print("Degats infliges :", dmg)
 else:
     dmg = random.randint(5, 15)
-    print("ECHEC : Mauvaise reponse.\nVous subissez {} degats.".format(dmg))
+    print("ECHEC : Mauvaise reponse.")
+    print("Votre sort '{}' echoue.".format(spell))
+    print("Vous subissez {} degats.".format(dmg))
