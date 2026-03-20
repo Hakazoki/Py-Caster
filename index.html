@@ -7,21 +7,31 @@
     <title>Py-Caster AR - Viseur</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 
 <body style="margin: 0; overflow: hidden;">
+    <div id="hp-joueur-background" width="1em" height="0.1em" color="black">
+        <div id="hp-joueur" width="1" height="0.1"></div>
+    </div>
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
 
         <a-assets>
-            <a-asset-item id="monster-model" src="assets/dragon_bug.glb"></a-asset-item>
+            <a-asset-item id="monster-model"
+                src="https://raw.githack.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb"></a-asset-item>
         </a-assets>
 
-        <a-marker type="hiro" id="marker">
-            <a-entity id="monster" gltf-model="#monster-model" scale="0.5 0.5 0.5" position="0 0 0"
+        <a-marker preset="hiro" id="marker">
+            <a-entity id="hp-container"></a-entity>>
+            <a-plane id="hp-background" width="1" height="0.1" color="black" position="0 0 -1"
+                rotation="-90 0 0"></a-plane>
+            <a-plane id="hp-bar" width="1" height="0.1" color="#00ff00" rotation="-90 0 0"></a-plane>
+            </a-entity>
+            <a-entity id="monster" gltf-model="#monster-model" scale="1 1 1" position="0 0 1"
                 animation__shake="property: position; from: 0 0 0; to: 0.1 0 0; dur: 50; loop: 5; startEvents: hit"></a-entity>
 
-            <a-sphere id="spell-effect" radius="0.2" color="orange" visible="false" position="0 1 0"
+            <a-sphere id="spell-effect" radius="0.2" color="Rouge" visible="false" position="0 1 0"
                 animation="property: scale; from: 1 1 1; to: 5 5 5; dur: 500; startEvents: explode"></a-sphere>
         </a-marker>
 
@@ -30,34 +40,80 @@
 
     <script>
         // Connexion au serveur Flask-SocketIO (IP du conteneur LXC) [cite: 12, 67]
-        const socket = io("http://VOTRE_IP_SERVEUR:5000");
+        const socket = io("http://192.168.10.210:5000");
 
+        const hpBar = document.querySelector('#hp-bar');
         const monster = document.querySelector('#monster');
         const spellEffect = document.querySelector('#spell-effect');
 
-        // Réception de l'ordre visuel instantané 
-        socket.on('visual_feedback', (data) => {
-            if (data.action === "explosion") {
-                // Déclencher l'animation d'impact [cite: 22]
-                spellEffect.setAttribute('visible', 'true');
-                spellEffect.emit('explode');
-                monster.emit('hit');
+        let ancienneVieEnnemi = 100;
 
-                // Cacher l'effet après 1 seconde
-                setTimeout(() => {
-                    spellEffect.setAttribute('visible', 'false');
-                    spellEffect.setAttribute('scale', '1 1 1');
-                }, 1000);
+        // 2. Écouter l'événement 'sync_vie' envoyé par le serveur
+        socket.on('sync_vie', (game_state) => {
+            console.log("Données reçues du serveur :", game_state);
+
+            // Extraction des données du dictionnaire Python de ton collègue
+            const vieEnnemi = game_state.vie_ennemi;
+            const vieJoueur = game_state.vie_joueur; // Tu pourrais aussi l'afficher pour le joueur
+
+            // 3. Mise à jour visuelle de la barre de vie
+            const maxHP = 100;
+            let ratio = vieEnnemi / maxHP;
+
+            // Animation de la barre
+            hpBar.setAttribute('scale', `${ratio} 1 1`);
+            hpBar.setAttribute('position', `${(ratio - 1) / 2} 0.03 -1`);
+
+            // Changement de couleur si vie faible
+            if (ratio < 0.3) {
+                hpBar.setAttribute('color', '#ff0000'); // Rouge critique
+            }
+            else if (ratio < 0.5) {
+                hpBar.setAttribute('color', 'orange');
+            }
+            else {
+                hpBar.setAttribute('color', '#00ff00'); // Vert
             }
 
-            if (data.action === "change_color") {
-                // Pour la Phase 2 de la Roadmap [cite: 41]
-                monster.setAttribute('material', 'color', data.color);
+            // 4. Si la vie a baissé, on joue l'animation de dégâts
+            if (vieEnnemi < ancienneVieEnnemi) {
+                triggerHitEffect();
             }
+
+            // Si la vie est revenue à 100 (Restart), on redresse le monstre
+            if (vieEnnemi > 0) {
+                monster.setAttribute('rotation', '0 -90 90');
+                monster.setAttribute('position', '0 0 1')
+            }
+
+            // Mise à jour de la mémoire locale
+            ancienneVieEnnemi = vieEnnemi;
         });
 
+        // Fonction pour l'effet visuel de "Sort réussi"
+        function triggerHitEffect() {
+
+
+            // Explosion AR
+            spellEffect.setAttribute('visible', 'true');
+            spellEffect.emit('explode');
+
+            monster.setAttribute('position', '0 0 1')
+
+            // On cache l'explosion après 500ms
+            setTimeout(() => {
+                spellEffect.setAttribute('visible', 'false');
+                spellEffect.setAttribute('scale', '1 1 1');
+            }, 500);
+
+            // Si le monstre meurt
+            if (ancienneVieEnnemi <= 0) {
+                monster.setAttribute('animation', 'property: rotation; to: 0 180 90; dur: 1000');
+            }
+        }
+
         socket.on('connect', () => {
-            console.log("Connecté au Grand Maître du Jeu");
+            console.log("Connecté au serveur ProLiant (192.168.10.210)");
         });
     </script>
 </body>
