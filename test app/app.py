@@ -14,7 +14,7 @@ game_state = {
 }
 
 def print_succes(hp):
-    print("\n" + r"""
+    message = "\n" + r"""
        * * *
      * \  |  /   * 
        * -- * -- *
@@ -25,7 +25,7 @@ def print_succes(hp):
     socketio.emit('ascii_log', {'data': message})
 
 def print_echec(hp):
-    print("\n" + r"""
+    message = "\n" + r"""
           _ ._  _ , _ ._
         (_ ' ( `  )_  .__)
       ( (  (    )   `)  ) _)
@@ -39,7 +39,7 @@ _____________/_ __ \_____________
     socketio.emit('ascii_log', {'data': message})
 
 def print_restart():
-    print("\n" + r"""
+    message = "\n" + r"""
      ==========================
      |Redemarrage de la partie|
      ==========================
