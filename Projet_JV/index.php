@@ -88,6 +88,11 @@ session_start();
         window.currentPuzzle = null;
         window.currentSpell = null;
 
+        function scrollTerminalToBottom() {
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+
         // ------------------------------------------------------------
         // 1. Fonction générique pour lancer un puzzle Python
         // ------------------------------------------------------------
@@ -107,6 +112,9 @@ ${q.text}
 ${q.template}
 
 Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
+
+            scrollTerminalToBottom();
+
         }
 
 
@@ -137,6 +145,7 @@ ${q.template}
 
                 if (startIndex === -1) {
                     terminal.value += "\nERREUR : Impossible de trouver compute().\n$ ";
+                    scrollTerminalToBottom();
                     return;
                 }
 
@@ -151,6 +160,7 @@ ${q.template}
 
                 if (runIndex === -1) {
                     terminal.value += "\nERREUR : Tape 'run' pour valider.\n$ ";
+                    scrollTerminalToBottom();
                     return;
                 }
 
@@ -185,6 +195,27 @@ ${q.template}
                 }).then(r => r.text());
 
                 terminal.value += "\n" + result + "\n$ ";
+                scrollTerminalToBottom();
+
+                // ------------------------------------------------------
+                // 8. Analyse du résultat via dictionnaire
+                // ------------------------------------------------------
+                const puzzleResultMap = {
+                    success: "SUCCES",
+                    failure: "ECHEC"
+                };
+
+                let success = false;
+
+                if (result.includes(puzzleResultMap.success)) {
+                    success = true;
+                } else if (result.includes(puzzleResultMap.failure)) {
+                    success = false;
+                }
+
+                // Envoi à Socket.io
+                Resultat(success);
+
             },
             soin: () => {
                 return fetch("soin.php")
@@ -207,6 +238,8 @@ ${q.template}
             terminalWrapper.classList.remove('d-none');
             terminal.focus();
             terminal.value += "\n$ ";
+            scrollTerminalToBottom();
+
         });
 
         closeTerminal.addEventListener('click', () => {
@@ -214,8 +247,11 @@ ${q.template}
         });
 
         resetBtn.addEventListener("click", function() {
-            fetch("reset_histo.php")
+            fetch("reset_histo.php");
+            scrollTerminalToBottom();
+
         });
+
         terminal.addEventListener("keydown", async (e) => {
             if (e.key !== "Enter") return;
 
@@ -230,6 +266,7 @@ ${q.template}
                 }
                 return;
             }
+            e.preventDefault();
 
             const cmd = lastLine.replace(/^\$/, "").trim();
 
@@ -240,15 +277,18 @@ ${q.template}
                     const text = await output;
                     if (text !== undefined) {
                         terminal.value += "\n" + text + "\n$ ";
+                        scrollTerminalToBottom();
                     }
                 } else {
                     if (output !== undefined) {
                         terminal.value += "\n" + output + "\n$ ";
+                        scrollTerminalToBottom();
                     }
                 }
 
             } else {
                 terminal.value += "\nCommande inconnue : " + cmd + "\n$ ";
+                scrollTerminalToBottom();
             }
         });
 
@@ -266,7 +306,6 @@ ${q.template}
             }
         });
     </script>
-
     <script>
         const socket = io('http://192.168.10.210:5000');
 
