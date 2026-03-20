@@ -20,7 +20,7 @@ def print_succes(hp):
        * -- * -- *
      * /  |  \   *
        * * *
-    """ + f"\n>>> SORTILLEGE LANCER AVEC SUCCES ! VIE DU MONSTRE : {hp} <<<\n")
+    """ + f"\n>>> SORTILLEGE LANCER AVEC SUCCES ! VIE DU MONSTRE : {hp} <<<\n"
     print(message)
     socketio.emit('ascii_log', {'data': message})
 
@@ -34,7 +34,7 @@ def print_echec(hp):
               ;   ;
               /   \
 _____________/_ __ \_____________
-    """ + f"\n>>> ECHEC DU SORTILLEGE IL VOUS EXPLOSE EN MAIN ! VIE DU JOUEUR : {hp} <<<\n")
+    """ + f"\n>>> ECHEC DU SORTILLEGE IL VOUS EXPLOSE EN MAIN ! VIE DU JOUEUR : {hp} <<<\n"
     print(message)
     socketio.emit('ascii_log', {'data': message})
 
@@ -43,7 +43,7 @@ def print_restart():
      ==========================
      |Redemarrage de la partie|
      ==========================
-    """ + "\n")
+    """ + "\n"
     print(message)
     socketio.emit('ascii_log', {'data': message})
 
