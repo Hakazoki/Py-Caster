@@ -9,6 +9,7 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="./css/style.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <title>Projet JV</title>
     <style>
         body {
@@ -84,6 +85,38 @@ session_start();
         const closeTerminal = document.getElementById('closeTerminal');
         const resetBtn = document.getElementById('resetBtn');
         let puzzleMode = false;
+        window.currentPuzzle = null;
+        window.currentSpell = null;
+
+        function scrollTerminalToBottom() {
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+
+        // ------------------------------------------------------------
+        // 1. Fonction générique pour lancer un puzzle Python
+        // ------------------------------------------------------------
+        async function launchPuzzle(spellName) {
+            puzzleMode = true;
+            window.currentSpell = spellName;
+
+            const questions = await fetch("question.json").then(r => r.json());
+            const q = questions[Math.floor(Math.random() * questions.length)];
+
+            window.currentPuzzle = q.id;
+
+            terminal.value += `
+=== PUZZLE PYTHON : Sort "${spellName}" ===
+${q.text}
+
+${q.template}
+
+Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
+
+            scrollTerminalToBottom();
+
+        }
+
 
         const commands = {
 
@@ -91,86 +124,104 @@ session_start();
                 return "Sorts dispo : help, fireball, soin, slay, foudre, glagla, histo";
             },
 
-            fireball: async () => {
-                puzzleMode = true;
-                const questions = await fetch("question.json").then(r => r.json());
-                const q = questions[Math.floor(Math.random() * questions.length)];
-                window.currentPuzzle = q.id;
-                terminal.value +=
-                    `\n=== PUZZLE PYTHON : Sort "fireball" ===
-${q.text}
-
-${q.template}
-
-Écris ton code ci-dessus puis tape "run" sur une nouvelle ligne pour valider.`;
-            },
-
+            fireball: () => launchPuzzle("Fireball"),
+            slay: () => launchPuzzle("Slay"),
+            glagla: () => launchPuzzle("Glagla"),
+            foudre: () => launchPuzzle("Foudre"),
 
             _resolvePuzzle: async () => {
 
+                // 1. Récupérer toutes les lignes du terminal
                 const allLines = terminal.value.split("\n");
 
-                const startIndex = allLines.findIndex(l =>
-                    l.trim().startsWith("def compute")
-                );
+                // 2. Trouver le DERNIER "def compute()"
+                let startIndex = -1;
+                for (let i = allLines.length - 1; i >= 0; i--) {
+                    if (allLines[i].trim().startsWith("def compute")) {
+                        startIndex = i;
+                        break;
+                    }
+                }
 
                 if (startIndex === -1) {
                     terminal.value += "\nERREUR : Impossible de trouver compute().\n$ ";
+                    scrollTerminalToBottom();
                     return;
                 }
 
-                const runIndex = allLines.length - 1;
+                // 3. Trouver le DERNIER "run" APRÈS ce compute()
+                let runIndex = -1;
+                for (let i = allLines.length - 1; i > startIndex; i--) {
+                    if (allLines[i].trim() === "run") {
+                        runIndex = i;
+                        break;
+                    }
+                }
 
-                let codeLines = allLines.slice(startIndex, runIndex);
+                if (runIndex === -1) {
+                    terminal.value += "\nERREUR : Tape 'run' pour valider.\n$ ";
+                    scrollTerminalToBottom();
+                    return;
+                }
 
-                codeLines = codeLines.filter(l =>
-                    l.trim().startsWith("def ") ||
-                    l.trim().startsWith("#") ||
-                    l.startsWith("    ") ||
-                    l.trim() === ""
-                );
+                // 4. Extraire toutes les lignes entre compute() et run
+                const rawBlock = allLines.slice(startIndex, runIndex);
 
+                // 5. Filtrer pour ne garder QUE les lignes Python valides
+                const codeLines = rawBlock.filter(l => {
+                    const t = l.trim();
+                    return (
+                        t.startsWith("def ") ||
+                        t.startsWith("return ") ||
+                        t.includes("=") ||
+                        t.startsWith("#") ||
+                        l.startsWith("    ") ||
+                        t === ""
+                    );
+                });
+
+                // 6. Reconstituer le code propre
                 const code = codeLines.join("\n");
 
-                const result = await fetch("cmd_fireball.php", {
+                // 7. Envoyer au serveur
+                const result = await fetch("cmd_attack.php", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded"
                     },
                     body: "code=" + encodeURIComponent(code) +
-                        "&puzzle_id=" + window.currentPuzzle
-
+                        "&puzzle_id=" + window.currentPuzzle +
+                        "&spell=" + window.currentSpell
                 }).then(r => r.text());
 
                 terminal.value += "\n" + result + "\n$ ";
-            },
+                scrollTerminalToBottom();
 
+                // ------------------------------------------------------
+                // 8. Analyse du résultat via dictionnaire
+                // ------------------------------------------------------
+                const puzzleResultMap = {
+                    success: "SUCCES",
+                    failure: "ECHEC"
+                };
+
+                let success = false;
+
+                if (result.includes(puzzleResultMap.success)) {
+                    success = true;
+                } else if (result.includes(puzzleResultMap.failure)) {
+                    success = false;
+                }
+
+                // Envoi à Socket.io
+                Resultat(success);
+
+            },
             soin: () => {
                 return fetch("soin.php")
                     .then(r => r.text())
                     .then(number => {
                         return "Vous vous soignez !\nPV récupérés : " + number;
-                    });
-            },
-            slay: () => {
-                return fetch("cmd_action.php")
-                    .then(r => r.text())
-                    .then(number => {
-                        return "Votre ennemi est lacéré !\nDégâts infligés : " + number;
-                    });
-            },
-            foudre: () => {
-                return fetch("cmd_action.php")
-                    .then(r => r.text())
-                    .then(number => {
-                        return "Des éclairs frappent l'adversaire !\nDégâts infligés : " + number;
-                    });
-            },
-            glagla: () => {
-                return fetch("cmd_action.php")
-                    .then(r => r.text())
-                    .then(number => {
-                        return "Un blizzard se lève !\nDégâts infligés : " + number;
                     });
             },
             histo: () => {
@@ -187,6 +238,8 @@ ${q.template}
             terminalWrapper.classList.remove('d-none');
             terminal.focus();
             terminal.value += "\n$ ";
+            scrollTerminalToBottom();
+
         });
 
         closeTerminal.addEventListener('click', () => {
@@ -194,8 +247,11 @@ ${q.template}
         });
 
         resetBtn.addEventListener("click", function() {
-            fetch("reset_histo.php")
+            fetch("reset_histo.php");
+            scrollTerminalToBottom();
+
         });
+
         terminal.addEventListener("keydown", async (e) => {
             if (e.key !== "Enter") return;
 
@@ -210,6 +266,7 @@ ${q.template}
                 }
                 return;
             }
+            e.preventDefault();
 
             const cmd = lastLine.replace(/^\$/, "").trim();
 
@@ -220,15 +277,18 @@ ${q.template}
                     const text = await output;
                     if (text !== undefined) {
                         terminal.value += "\n" + text + "\n$ ";
+                        scrollTerminalToBottom();
                     }
                 } else {
                     if (output !== undefined) {
                         terminal.value += "\n" + output + "\n$ ";
+                        scrollTerminalToBottom();
                     }
                 }
 
             } else {
                 terminal.value += "\nCommande inconnue : " + cmd + "\n$ ";
+                scrollTerminalToBottom();
             }
         });
 
@@ -246,9 +306,43 @@ ${q.template}
             }
         });
     </script>
+    <script>
+        const socket = io('http://192.168.10.210:5000');
+
+        function Resultat(success) {
+            socket.emit('reussite_sortilege', {
+                reussite: success
+            });
+        }
+
+        document.getElementById('btn-valider-sort').addEventListener('click', () => {
+            Resultat(true);
+        });
+
+        function relancerPartie() {
+            socket.emit('restart_game');
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            relancerPartie();
+        });
+
+        socket.on('connect', () => {
+            console.log("✔️ Connecté au serveur Socket.io");
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error("❌ Erreur de connexion :", err);
+        });
+
+        socket.on('disconnect', () => {
+            console.warn("⚠️ Déconnecté du serveur");
+        });
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" crossorigin="anonymous"></script>
+
 </body>
 
 </html>
